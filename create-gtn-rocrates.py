@@ -141,27 +141,50 @@ for topic in contents_for_all_topics:
 #       "creators": "data"
 
 
-####################################################
-### step 5 create RO-crate for all GTN materials ###
-####################################################
+#####################################################
+### step 5 create RO-crates for all GTN materials ###
+#####################################################
 
-### create single RO-crate
 # see https://github.com/ResearchObject/ro-crate-py
 
-### example
-one_workflow = gtn_workflow_metadata['visualisation-circos']
-
-crate = ROCrate()
-workflow = crate.add_file("./workflow_files/assembly-assembly-quality-control.ga")
+from rocrate.model.contextentity import ContextEntity
 from rocrate.model.person import Person
 
-if 'workflow_creator' in one_workflow:
-    for creator in range(len(one_workflow['workflow_creator'])):
-        data = one_workflow['workflow_creator'][creator]
-        creator_entry = crate.add(Person(crate, data['identifier'], properties={
-            "name": data['name']
-        }))
-        workflow["author"] = creator_entry
+for workflow_id in gtn_workflow_metadata:
 
-crate.write("exp_crate")
+    workflow_data = gtn_workflow_metadata[workflow_id]
+
+    crate = ROCrate()
+
+    #workflow = crate.add_file("./workflow_files/" + workflow_id + ".ga")
+    workflow = crate.add(ContextEntity(crate, workflow_id, properties={
+        "@type": ["File", "SoftwareSourceCode", "ComputationalWorkflow"],
+        "name": workflow_data['workflow_name'],
+        "version": workflow_data['workflow_version'],
+        "license": workflow_data['workflow_license']
+    }))
+
+    if isinstance(workflow_data['workflow_creator'], list):
+        creator_list = []
+        for creator in range(len(workflow_data['workflow_creator'])):
+            data = workflow_data['workflow_creator'][creator]
+            if 'identifier' in data:
+                creator_entry = crate.add(Person(crate, data['identifier'], properties={
+                    "name": data['name']
+                }))
+            else:
+                creator_entry = crate.add(Person(crate, properties={
+                    "name": data['name']
+                }))
+            creator_list.append(creator_entry)
+        workflow["author"] = creator_list
+
+    crate.write("./ro_crates/" + workflow_id + workflow_data['workflow_uuid'])
+
+
+
+
+
+
+
 
